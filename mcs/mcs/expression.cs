@@ -6872,7 +6872,7 @@ namespace Mono.CSharp
 	public class ArrayInitializer : Expression
 	{
 		protected List<Expression> elements;
-		protected BlockVariableDeclaration variable;
+		protected BlockVariable variable;
 
 		public ArrayInitializer (List<Expression> init, Location loc)
 		{
@@ -6908,7 +6908,7 @@ namespace Mono.CSharp
 			}
 		}
 
-		public BlockVariableDeclaration VariableDeclaration {
+		public BlockVariable VariableDeclaration {
 			get {
 				return variable;
 			}

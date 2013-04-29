@@ -71,7 +71,7 @@ namespace Mono.PlayScript
 		/// </summary>
 		Block      current_block;
 		
-		BlockVariableDeclaration current_variable;
+		BlockVariable current_variable;
 
 		Delegate   current_delegate;
 		
@@ -4690,7 +4690,7 @@ local_function_statement
 		var anonMethod = end_anonymous ((ParametersBlock) $10);
 		var li = new LocalVariable (current_block.ParametersBlock, lt.Value, lt.Location);
 		var type = Delegate.CreateDelegateTypeExpression(compiler.BuiltinTypes, anonMethod.AsParameters, anonMethod.AsReturnType, GetLocation($1));
-		var decl = new BlockVariableDeclaration(type, li);
+		var decl = new BlockVariable (type, li);
 		decl.Initializer = anonMethod;
 		current_block.AddLocalName (li);
 		current_block.ParametersBlock.AddScopeStatement (decl);	
@@ -4711,7 +4711,7 @@ local_function_statement
 		var anonMethod = end_anonymous ((ParametersBlock) $11);
 		var li = new LocalVariable (current_block.ParametersBlock, lt.Value, lt.Location);
 		var type = Delegate.CreateDelegateTypeExpression(compiler.BuiltinTypes, anonMethod.AsParameters, anonMethod.AsReturnType, GetLocation($1));
-		var decl = new BlockVariableDeclaration(type, li);
+		var decl = new BlockVariable (type, li);
 		decl.Initializer = anonMethod;
 		current_block.AddLocalName (li);
 		current_block.ParametersBlock.AddScopeStatement (decl);	
@@ -6277,7 +6277,7 @@ block_variable_declaration
 	  {
 		var lt = (Tokenizer.LocatedToken) $2;
 		var li = GetOrCreateLocalVariable (current_block, lt.Value, 0, (FullNamedExpression) $4, lt.Location);
-		current_variable = new BlockVariableDeclaration ((FullNamedExpression) $4, li);
+		current_variable = new BlockVariable ((FullNamedExpression) $4, li);
 	  }
 	  opt_local_variable_initializer opt_variable_declarators stmnt_end_semicolon
 	  {
@@ -6289,7 +6289,7 @@ block_variable_declaration
 	  {
 		var lt = (Tokenizer.LocatedToken) $2;
 		var li = GetOrCreateLocalVariable (current_block, lt.Value, 0, null, lt.Location);
-		current_variable = new BlockVariableDeclaration (new VarExpr (GetLocation($1)), li);
+		current_variable = new BlockVariable (new VarExpr (GetLocation($1)), li);
 	  }
 	  opt_local_variable_initializer opt_variable_declarators stmnt_end_semicolon
 	  {
@@ -6301,7 +6301,7 @@ block_variable_declaration
 	  {
 		var lt = (Tokenizer.LocatedToken) $2;
 		var li = GetOrCreateLocalVariable (current_block, lt.Value, /*LocalVariable.Flags.Constant*/ 0, null, lt.Location);
-		current_variable =  new BlockVariableDeclaration (new VarExpr (GetLocation($1)), li); // new BlockConstantDeclaration ((FullNamedExpression) $4, li);
+		current_variable =  new BlockVariable (new VarExpr (GetLocation($1)), li); // new BlockConstantDeclaration ((FullNamedExpression) $4, li);
 	  }
 	  opt_local_variable_initializer opt_variable_declarators stmnt_end_semicolon
 	  /* const_variable_initializer opt_const_declarators stmnt_end_semicolon */
@@ -6357,7 +6357,7 @@ variable_declarator
 		var lt = (Tokenizer.LocatedToken) $2;	  
 		var li = GetOrCreateLocalVariable (current_variable.Variable.Block, lt.Value, 
 			current_variable.Variable.DeclFlags, current_variable.TypeExpression, lt.Location);
-		var d = new BlockVariableDeclaration.Declarator (li, null);
+		var d = new BlockVariableDeclarator (li, null);
 		current_variable.AddDeclarator (d);
 	  	lbag.AddLocation (d, GetLocation ($1));
 	  }
@@ -6366,7 +6366,7 @@ variable_declarator
 		var lt = (Tokenizer.LocatedToken) $2;	  
 		var li = GetOrCreateLocalVariable (current_variable.Variable.Block, lt.Value, 
 			current_variable.Variable.DeclFlags, current_variable.TypeExpression, lt.Location);
-		var d = new BlockVariableDeclaration.Declarator (li, (Expression) $4);
+		var d = new BlockVariableDeclarator (li, (Expression) $4);
 		current_variable.AddDeclarator (d);
 	  	lbag.AddLocation (d, GetLocation ($1), GetLocation ($3));
 	  }
@@ -6375,7 +6375,7 @@ variable_declarator
 		var lt = (Tokenizer.LocatedToken) $2;	  
 		var li = GetOrCreateLocalVariable (current_variable.Variable.Block, lt.Value, 
 			current_variable.Variable.DeclFlags, (FullNamedExpression) $4, lt.Location);
-		var d = new BlockVariableDeclaration.Declarator (li, null, (FullNamedExpression) $4);
+		var d = new BlockVariableDeclarator (li, null, (FullNamedExpression) $4);
 		d.Location = GetLocation($2);
 		current_variable.AddDeclarator (d);
 	  	lbag.AddLocation (d, GetLocation ($1));
@@ -6385,7 +6385,7 @@ variable_declarator
 		var lt = (Tokenizer.LocatedToken) $2;	  
 		var li = GetOrCreateLocalVariable (current_variable.Variable.Block, lt.Value, 
 			current_variable.Variable.DeclFlags, (FullNamedExpression) $4, lt.Location);
-		var d = new BlockVariableDeclaration.Declarator (li, (Expression) $6, (FullNamedExpression) $4);
+		var d = new BlockVariableDeclarator (li, (Expression) $6, (FullNamedExpression) $4);
 		d.Location = GetLocation($2);
 		current_variable.AddDeclarator (d);
 	  	lbag.AddLocation (d, GetLocation ($1), GetLocation ($5));
@@ -6419,7 +6419,7 @@ variable_declarator
 //		var lt = (Tokenizer.LocatedToken) $2;	  
 //		var li = GetOrCreateLocalVariable (current_block, lt.Value, 
 //			LocalVariable.Flags.Constant, current_variable.TypeExpression, lt.Location);
-//		var d = new BlockVariableDeclaration.Declarator (li, (Expression) $4);
+//		var d = new BlockVariableDeclarator (li, (Expression) $4);
 //		current_variable.AddDeclarator (d);
 //	  	lbag.AddLocation (d, GetLocation ($1), GetLocation ($3));
 //	  }
@@ -6709,7 +6709,7 @@ for_statement_cont
 		if ($6 is EmptyStatement && lexer.peek_token () == Token.OPEN_BRACE)
 			Warning_EmptyStatement (GetLocation ($6));
 
-		var blockVar = $1 as BlockVariableDeclaration;
+		var blockVar = $1 as BlockVariable;
 		if (blockVar != null) {
 			if (blockVar == null || blockVar.Initializer != null || blockVar.Declarators != null) {
 				report.Error (7036, GetLocation ($4), "Invalid for each initializer");	
@@ -6834,7 +6834,7 @@ for_initializer
 		var lt = (Tokenizer.LocatedToken) $2;
 		var type = (FullNamedExpression) $4;
 		var li = GetOrCreateLocalVariable (current_block, lt.Value, 0, type, lt.Location);
-		current_variable = new BlockVariableDeclaration (type, li);
+		current_variable = new BlockVariable (type, li);
 	  }
 	  opt_local_variable_initializer opt_variable_declarators
 	  {
@@ -6897,7 +6897,7 @@ foreach_statement
 		if ($10 is EmptyStatement && lexer.peek_token () == Token.OPEN_BRACE)
 			Warning_EmptyStatement (GetLocation ($10));
 
-		var blockVar = $4 as BlockVariableDeclaration;
+		var blockVar = $4 as BlockVariable;
 		if (blockVar != null) {
 			if (blockVar == null || blockVar.Initializer != null || blockVar.Declarators != null) {
 				report.Error (7036, GetLocation ($4), "Invalid for each initializer");	
@@ -8345,7 +8345,7 @@ AnonymousMethodExpression end_anonymous (ParametersBlock anon_block)
 
 	Lexer.AutoSemiInsertion = (bool) oob_stack.Pop ();
 	async_block = (bool) oob_stack.Pop ();
-	current_variable = (BlockVariableDeclaration) oob_stack.Pop ();
+	current_variable = (BlockVariable) oob_stack.Pop ();
 	current_local_parameters = (ParametersCompiled) oob_stack.Pop ();
 	current_anonymous_method = (AnonymousMethodExpression) oob_stack.Pop ();
 

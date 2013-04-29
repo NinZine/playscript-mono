@@ -1723,91 +1723,93 @@ namespace Mono.CSharp {
 		FullNamedExpression TypeExpr { get; set; }
 	}
 
-	public partial class BlockVariableDeclaration : Statement
+	public class BlockVariableDeclarator
 	{
-		public class Declarator
+		LocalVariable li;
+		FullNamedExpression type_expr;
+		Expression initializer;
+		Location loc;
+
+		public BlockVariableDeclarator (LocalVariable li, Expression initializer, FullNamedExpression type_expr = null)
 		{
-			LocalVariable li;
-			FullNamedExpression type_expr;
-			Expression initializer;
-			Location loc;
+			if (li.Type != null)
+				throw new ArgumentException ("Expected null variable type");
 
-			public Declarator (LocalVariable li, Expression initializer, FullNamedExpression type_expr = null)
-			{
-				if (li.Type != null)
-					throw new ArgumentException ("Expected null variable type");
-
-				this.li = li;
-				this.type_expr = type_expr;
-				this.initializer = initializer;
-			}
-
-			public Declarator (Declarator clone, Expression initializer)
-			{
-				this.li = clone.li;
-				this.type_expr = clone.type_expr;
-				this.initializer = initializer;
-			}
-
-			#region Properties
-
-			public LocalVariable Variable {
-				get {
-					return li;
-				}
-			}
-
-			public Expression Initializer {
-				get {
-					return initializer;
-				}
-				set {
-					initializer = value;
-				}
-			}
-
-			public FullNamedExpression TypeExpression {
-				get { 
-					return type_expr; 
-				}
-				set {
-					type_expr = value;
-				}
-			}
-
-			public Location Location {
-				get {
-					return loc;
-				}
-				set {
-					loc = value;
-				}
-			}
-
-			#endregion
+			this.li = li;
+			this.type_expr = type_expr;
+			this.initializer = initializer;
 		}
 
+		#region Properties
+
+		public LocalVariable Variable {
+			get {
+				return li;
+			}
+		}
+
+		public Expression Initializer {
+			get {
+				return initializer;
+			}
+			set {
+				initializer = value;
+			}
+		}
+
+		public FullNamedExpression TypeExpression {
+			get { 
+				return type_expr; 
+			}
+			set {
+				type_expr = value;
+			}
+		}
+
+		public Location Location {
+			get {
+				return loc;
+			}
+			set {
+				loc = value;
+			}
+		}
+
+		#endregion
+
+		public virtual BlockVariableDeclarator Clone (CloneContext cloneCtx)
+		{
+			var t = (BlockVariableDeclarator) MemberwiseClone ();
+			if (initializer != null)
+				t.initializer = initializer.Clone (cloneCtx);
+
+			return t;
+		}
+	}
+
+	public partial class BlockVariable : Statement
+	{
 		Expression initializer;
 		protected FullNamedExpression type_expr;
 		protected LocalVariable li;
-		protected List<Declarator> declarators;
+		protected List<BlockVariableDeclarator> declarators;
 		TypeSpec type;
 
-		public BlockVariableDeclaration (FullNamedExpression type, LocalVariable li)
+		public BlockVariable (FullNamedExpression type, LocalVariable li)
 		{
 			this.type_expr = type;
 			this.li = li;
 			this.loc = type_expr.Location;
 		}
 
-		protected BlockVariableDeclaration (LocalVariable li)
+		protected BlockVariable (LocalVariable li)
 		{
 			this.li = li;
 		}
 
 		#region Properties
 
-		public List<Declarator> Declarators {
+		public List<BlockVariableDeclarator> Declarators {
 			get {
 				return declarators;
 			}
@@ -1836,10 +1838,10 @@ namespace Mono.CSharp {
 
 		#endregion
 
-		public void AddDeclarator (Declarator decl)
+		public void AddDeclarator (BlockVariableDeclarator decl)
 		{
 			if (declarators == null)
-				declarators = new List<Declarator> ();
+				declarators = new List<BlockVariableDeclarator> ();
 
 			declarators.Add (decl);
 		}
@@ -1852,7 +1854,7 @@ namespace Mono.CSharp {
 			var container = bc.CurrentMemberDefinition.Parent.PartialContainer;
 
 			Field f = new Field (container, new TypeExpression (li.Type, li.Location), Modifiers.PUBLIC | Modifiers.STATIC,
-				new MemberName (li.Name, li.Location), null);
+			                     new MemberName (li.Name, li.Location), null);
 
 			container.AddField (f);
 			f.Define ();
@@ -1922,8 +1924,8 @@ namespace Mono.CSharp {
 		}
 
 		private static TypeSpec ResolveVariableType(LocalVariable li, Expression type_expr, 
-		                                     Expression initializer, out Expression resolvedInitializer, 
-		                                     List<Declarator> declarators, Location loc, BlockContext bc) 
+		                                            Expression initializer, out Expression resolvedInitializer, 
+		                                            List<BlockVariableDeclarator> declarators, Location loc, BlockContext bc) 
 		{
 			TypeSpec type = null;
 
@@ -1985,7 +1987,7 @@ namespace Mono.CSharp {
 
 			if (type.IsStatic)
 				FieldBase.Error_VariableOfStaticClass (loc, li.Name, type, bc.Report);
-		
+
 			return type;
 		}
 
@@ -2038,7 +2040,7 @@ namespace Mono.CSharp {
 
 		protected override void CloneTo (CloneContext clonectx, Statement target)
 		{
-			BlockVariableDeclaration t = (BlockVariableDeclaration) target;
+			BlockVariable t = (BlockVariable) target;
 
 			if (type_expr != null)
 				t.type_expr = (FullNamedExpression) type_expr.Clone (clonectx);
@@ -2049,7 +2051,7 @@ namespace Mono.CSharp {
 			if (declarators != null) {
 				t.declarators = null;
 				foreach (var d in declarators)
-					t.AddDeclarator (new Declarator (d, d.Initializer == null ? null : d.Initializer.Clone (clonectx)));
+					t.AddDeclarator (d.Clone (clonectx));
 			}
 		}
 
@@ -2083,9 +2085,9 @@ namespace Mono.CSharp {
 		}
 	}
 
-	public class BlockConstantDeclaration : BlockVariableDeclaration
+	public class BlockConstant : BlockVariable
 	{
-		public BlockConstantDeclaration (FullNamedExpression type, LocalVariable li)
+		public BlockConstant (FullNamedExpression type, LocalVariable li)
 			: base (type, li)
 		{
 		}
@@ -3477,7 +3479,7 @@ namespace Mono.CSharp {
 				if (param != null && (param.ParameterModifier & Parameter.Modifier.PARAMS) != 0) {
 					string argName = param.Name.Substring (2); // Arg should start with "__" (we added it in the parser).
 					var li = new LocalVariable (this, argName, this.loc);
-					var decl = new BlockVariableDeclaration (new Mono.CSharp.TypeExpression(rc.Module.PredefinedTypes.AsArray.Resolve(), this.loc), li);
+					var decl = new BlockVariable (new Mono.CSharp.TypeExpression(rc.Module.PredefinedTypes.AsArray.Resolve(), this.loc), li);
 					var arguments = new Arguments (1);
 					arguments.Add (new Argument(new SimpleName(param.Name, this.loc)));
 					decl.Initializer = new Invocation (new MemberAccess(new MemberAccess(new SimpleName("PlayScript", this.loc), "Support", this.loc), "CreateArgListArray", this.loc), arguments);
@@ -5844,7 +5846,7 @@ namespace Mono.CSharp {
 			}
 		}
 
-		public class VariableDeclaration : BlockVariableDeclaration
+		public class VariableDeclaration : BlockVariable
 		{
 			public VariableDeclaration (FullNamedExpression type, LocalVariable li)
 				: base (type, li)
@@ -5969,7 +5971,7 @@ namespace Mono.CSharp {
 			}
 		}
 
-		public BlockVariableDeclaration Variables {
+		public BlockVariable Variables {
 			get {
 				return decl;
 			}
@@ -6422,7 +6424,7 @@ namespace Mono.CSharp {
 
 	public class Using : TryFinallyBlock
 	{
-		public class VariableDeclaration : BlockVariableDeclaration
+		public class VariableDeclaration : BlockVariable
 		{
 			Statement dispose_call;
 
@@ -6599,7 +6601,7 @@ namespace Mono.CSharp {
 			}
 		}
 
-		public BlockVariableDeclaration Variables {
+		public BlockVariable Variables {
 			get {
 				return decl;
 			}

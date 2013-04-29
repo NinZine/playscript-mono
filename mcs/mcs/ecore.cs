@@ -2813,7 +2813,7 @@ namespace Mono.CSharp {
 						var paramBlock = rc.CurrentBlock.ParametersBlock;
 						var li = new LocalVariable (paramBlock, "arguments", paramBlock.loc);
 						li.Type = rc.Module.PredefinedTypes.AsArray.Resolve();
-						var decl = new BlockVariableDeclaration(new Mono.CSharp.TypeExpression(rc.Module.PredefinedTypes.AsArray.Resolve(), paramBlock.loc), li);
+						var decl = new BlockVariable(new Mono.CSharp.TypeExpression(rc.Module.PredefinedTypes.AsArray.Resolve(), paramBlock.loc), li);
 						if (rc.PsExtended) { // PlayScript uses a normal array for 'arguments'
 							var initializers = new List<Expression>();
 							foreach (Parameter param in paramBlock.Parameters.FixedParameters) {
