@@ -905,12 +905,14 @@ namespace Mono.CSharp {
 				AllowedModifiersClass | Modifiers.ASYNC,
 				name, attrs, parameters)
 		{
+			HasNoReturnType = false;
 		}
 
 		protected Method (TypeDefinition parent, FullNamedExpression return_type, Modifiers mod, Modifiers amod,
 					MemberName name, ParametersCompiled parameters, Attributes attrs)
 			: base (parent, return_type, mod, amod, name, attrs, parameters)
 		{
+			HasNoReturnType = false;
 		}
 
 		#region Properties
@@ -932,6 +934,8 @@ namespace Mono.CSharp {
 				return CurrentTypeParameters == null ? 0 : CurrentTypeParameters.Count;
 			}
 		}
+
+		public bool HasNoReturnType { get; set; }
 
 		#endregion
 
